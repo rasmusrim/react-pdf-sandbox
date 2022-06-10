@@ -1,11 +1,12 @@
-import path from 'path';
+const path = require('path');
 
-import browserslist from 'browserslist';
+const browserslist = require("browserslist");
 
-import CopyPlugin from 'copy-webpack-plugin';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
-import { ESBuildMinifyPlugin } from 'esbuild-loader';
-import { CleanWebpackPlugin } from 'clean-webpack-plugin';
+const CopyPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { ESBuildMinifyPlugin } = require('esbuild-loader');
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const webpack = require("webpack");
 
 const here = (dir) => (dir ? path.resolve(process.cwd(), dir) : process.cwd());
 
@@ -25,13 +26,10 @@ function getBuildTarget() {
 }
 
 const target = getBuildTarget();
+const isProduction = false;
 
-export default (env, args = {}) => {
-    const { mode = 'development' } = args;
-    const isProduction = mode === 'production';
+module.exports = {
 
-    return {
-        mode,
         context: here(),
         target: 'web',
         entry: {
@@ -47,6 +45,14 @@ export default (env, args = {}) => {
         resolve: {
             extensions: ['.ts', '.tsx', '.js', '.jsx'],
             modules: [here('./node_modules'), here(dirs.src)],
+            fallback: {
+                process: require.resolve("process/browser"),
+                zlib: require.resolve("browserify-zlib"),
+                stream: require.resolve("stream-browserify"),
+                util: require.resolve("util"),
+                buffer: require.resolve("buffer"),
+                assert: require.resolve("assert"),
+            }
         },
         devtool: isProduction ? 'source-map' : 'inline-cheap-module-source-map',
         module: {
@@ -87,6 +93,10 @@ export default (env, args = {}) => {
             new CopyPlugin({
                 patterns: [{ from: 'src/manifest.json', to: 'manifest.json' }, { from: `${dirs.src}/assets` }],
             }),
+            new webpack.ProvidePlugin({
+                Buffer: ["buffer", "Buffer"],
+                process: "process/browser",
+            })
         ],
         optimization: {
             minimize: isProduction,
@@ -126,4 +136,4 @@ export default (env, args = {}) => {
             },
         },
     };
-};
+
